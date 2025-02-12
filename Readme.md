@@ -95,17 +95,11 @@ python3 -m pip install article-dataset-builder==0.2.4
 
 Depending on the process you are interested to apply to the articles as they are harvested, the following tools need to be installed/accessed and running, with access information specified in the configuration file (`config.json`):
 
-- [biblio-glutton](https://github.com/kermitt2/biblio-glutton), for metadata retrieval and aggregation
-
-It should be possible to use the public demo instance of [biblio-glutton](https://github.com/kermitt2/biblio-glutton), as default configured in the `config.json` file (the tool scale at more than 6000 queries per second). However in combaination with [Grobid](https://github.com/kermitt2/grobid), we strongly recommand to install a local instance, because the online public demo will not be able to scale and won't be reliable given that it is more or less always overloaded. 
-
-- [Grobid](https://github.com/kermitt2/grobid), for converting PDF into XML TEI
-
-This tool requires Java 8 to 11. 
-
+- [biblio-glutton](https://github.com/kermitt2/biblio-glutton), for metadata retrieval and aggregation.
+- [Grobid](https://github.com/kermitt2/grobid), for converting PDF into XML TEI. 
 - [Pub2TEI](https://github.com/kermitt2/Pub2TEI), for converting PMC XML files into XML TEI
 
-As [biblio-glutton](https://github.com/kermitt2/biblio-glutton) is using dataset dumps, there is a gap of several months in term of bibliographical data freshness. So, complementary, the [CrossRef web API](https://github.com/CrossRef/rest-api-doc) and [Unpaywall API](https://unpaywall.org/products/api) services are used to cover the gap. For these two services, you need to indicate your email in the config file (`config.json`) to follow the etiquette policy of these two services. If the configuration parameters for `biblio-glutton` are empty, only the CrossRef REST API will be used. 
+As [biblio-glutton](https://github.com/kermitt2/biblio-glutton) is using dataset dumps, there is a gap of several months in term of bibliographical data freshness. So, complementary, the [CrossRef web API](https://github.com/CrossRef/rest-api-doc) and [Unpaywall API](https://unpaywall.org/products/api) services are used to cover the gap. For these two services, you need to indicate your email in the config file (`config.json`) to follow the etiquette policy of these two services. If the configuration parameters for `biblio-glutton` are empty (default), only the CrossRef REST API will be used. 
 
 An important parameter in the `config.json` file is the number of parallel document processing that is allowed, this is specified by the attribute `batch_size`, default value being `10` (so 10 documents max downloaded in parallel with distinct threads/workers and processed by Grobid in parallel). You can set this number according to your available number of threads. If you do not apply Grobid on the downloaded PDF, you can raise the `batch_size` parameter significantly, for example to `50`, which means then 100 paralell download. Be careful that parallel download from the same source might be blocked or might result in black-listing for some OA publisher sites, so it might be better to keep `batch_size` reasonable even when only donwloading.  
 

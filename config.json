@@ -11,7 +11,7 @@
     "arxiv_base": "https://arxiv.org/pdf",
     "unpaywall_base": "http://api.unpaywall.org/v2/",
     "unpaywall_email": "",
-    "biblio_glutton_base": "http://cloud.science-miner.com/glutton",
+    "biblio_glutton_base": "",
     "crossref_base": "https://api.crossref.org",
     "crossref_email": "",
     "grobid_base": "localhost",
