@@ -4,6 +4,7 @@ target
 .settings
 .classpath
 .idea
+.venv
 *.iml
 *.log
 *.log.*
