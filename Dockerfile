@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -e .
 
 ENTRYPOINT ["python", "article_dataset_builder/harvest.py"]
-CMD ["--dois", "test/dois.txt", "--grobid", "--diagnostic"]
+CMD ["--grobid", "--diagnostic", "--dois", "test/dois.txt"]

@@ -20,6 +20,8 @@ services:
     image: article_dataset_builder-harvester:latest
     volumes:
       - ./:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       grobid:
         condition: service_healthy

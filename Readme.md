@@ -1,25 +1,22 @@
 [![PyPI version](https://badge.fury.io/py/article_dataset_builder.svg)](https://badge.fury.io/py/article_dataset_builder)
-[![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![License](https://img.shields.io/:license-apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-# Open Access scholar PDF harvester and ingester
+# PDF Harvester and Ingester for Open Access Research
 
-Python utility for harvesting efficiently a large Open Access collection of scholar PDF (fault tolerant, can be resumed, parallel download and ingestion) and for transforming them into structured XML adapted to text mining and information retrieval applications.
+Python utility for efficiently harvesting a large collection of open access research articles (fault tolerant, can be resumed, parallel download and ingestion) and for transforming them into structured XML, adapted to text mining and information retrieval applications.
 
-Input currently supported:
+Currently supported inputs:
 
-- list of DOI in a file, one DOI per line
-- list of PMID in a file, one DOI per line
-- list of PMC ID in a file, one DOI per line
-- metadata csv input file from [CORD-19 dataset](https://pages.semanticscholar.org/coronavirus-research), see the CORD-19 result section below to see the capacity of the tool to get more full texts and better data quality that the official dataset
+- list of DOIs, one DOI per line
+- list of PMIDs, one PMID per line
+- list of PMC IDs, one PMC ID per line
+- metadata CSV input file from [CORD-19 dataset](https://pages.semanticscholar.org/coronavirus-research)
 
-The harvesting is following fair-use (which means that it covers non re-sharable articles) and it is exploiting various Open Access sources. The harvesting thus should result in a close-to-optimal discovery of OA full texts. For instance, from the same CORD-19 metadata file, the tool can harvest 35.5% more usable full text than available in the CORD-19 dataset (140,322 articles with at least one usable full text versus 103,587 articles with at least one usable full text for the CORD-19 dataset version 2020-09-11), see statistics [here](https://github.com/kermitt2/article_dataset_builder#results-with-cord-19). 
+The harvesting is following fair use (which means that it covers non-resharable articles) and it is exploiting various Open Access sources. The harvesting thus should result in a close-to-optimal discovery of OA full texts. 
 
-To do:
-- Apache Airflow for more complex task workflow and automated periodic incremental harvesting
-- Consolidate/resolve bibliographical references obtained via Pub2TEI
-- Upload harvested resources on SWIFT object storage (OpenStack) in addition to local and S3 storage
+For instance, from the same CORD-19 metadata file, the tool can harvest 35.5% more usable full text than available in the CORD-19 dataset (140,322 articles with at least one usable full text versus 103,587 articles with at least one usable full text for the CORD-19 dataset version 2020-09-11), see statistics [here](#results-with-cord-19). 
 
-## What this doing is doing
+## What this does
 
 - Perform some metadata enrichment/agregation via [biblio-glutton](https://github.com/kermitt2/biblio-glutton) & [CrossRef web API](https://github.com/CrossRef/rest-api-doc) and output consolidated metadata in a json file 
 
@@ -31,36 +28,35 @@ To do:
 
 In addition, optionally: 
 
-- Generate thumbnails for article (based on the first page of the PDF), small/medium/large 
+- Generate thumbnails for articles (based on the first page of the PDF), small/medium/large
 
-- Upload the generated dataset on S3, instead of the local file system
+- Upload the generated dataset to S3, instead of using the local file system
 
-- Generate json PDF annotations (with coordinates) for inline reference markers and bibliographical references (see [here](https://grobid.readthedocs.io/en/latest/Grobid-service/#apireferenceannotations))
+- Generate JSON PDF annotations (with coordinates) for inline reference markers and bibliographical references (see [here](https://grobid.readthedocs.io/en/latest/Grobid-service/#apireferenceannotations))
 
 ## Requirements
 
-The utility has been tested with Python 3.5+. It is developed for a deployment on a POSIX/Linux server (it uses `imagemagick` as external process to generate thumbnails and `wget`). An S3 account and bucket must have been created for non-local storage of the data collection. 
+The utility has been tested with Python 3.5+. It is developed for a deployment on a POSIX/Linux server. An S3 account and bucket must have been created for non-local storage of the data collection.
 
-If you wish to generate thumbnails for article as they are harvested, install `imagemagick`:
+### Ubuntu Linux
 
-- on Linux Ubuntu:
-
-```console
-sudo apt update
-sudo apt build-dep imagemagick
+```sh
+apt install wget
+apt build-dep imagemagick # Optional, for thumbnail generation
 ```
 
-- on macos:
+### MacOS
 
-```console
+```sh
+brew install wget
 brew install libmagic
 ```
 
 ## Installation
 
-### Article dataset builder
+### Article Dataset Builder
 
-#### Local install
+#### From source
 
 For installing the tool locally and use the current master version, get the github repo:
 
@@ -69,52 +65,101 @@ git clone https://github.com/kermitt2/article_dataset_builder
 cd delft
 ```
 
-Create a virtual environment and install the Python mess:
+Create a virtual environment and install the package dependencies:
 
-```console
-virtualenv --system-site-packages -p python3.8 env
+```sh
+python3 -m venv env
 source env/bin/activate
-python3 -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 Finally install the project, preferably in editable state
 
 ```sh
-python3 -m pip  install -e .
+pip install -e .
 ```
 
 #### Using PyPI package
 
-PyPI packages are available for stable versions. Latest stable version is normally `0.2.4`, but double check [here](https://pypi.org/project/article-dataset-builder/):
+[PyPI packages](https://pypi.org/project/article-dataset-builder/) are available for stable versions:
 
+```sh
+pip install article-dataset-builder
 ```
-python3 -m pip install article-dataset-builder==0.2.4
+
+#### Docker
+
+Build the image from the provided [Dockerfile](./Dockerfile) with:
+```sh
+docker build -t article_dataset_builder-harvester .
 ```
 
-### Third party web services
+The Docker container runs `harvest.py` with any arguments you provide:
+```sh
+docker run -it --rm -v "$(pwd):/app" article_dataset_builder-harvester
+```
 
-Depending on the process you are interested to apply to the articles as they are harvested, the following tools need to be installed/accessed and running, with access information specified in the configuration file (`config.json`):
+To access a locally running Grobid instance on Linux, you also need to manually add Docker's internal host bridge to the container:
+```sh
+docker run -it --rm -v "$(pwd):/app" --add-host=host.docker.internal:host-gateway article_dataset_builder-harvester
+```
 
-- [biblio-glutton](https://github.com/kermitt2/biblio-glutton), for metadata retrieval and aggregation.
+Note: The compose file, combining Grobid and the pipeline, is currently not ready for use.
+
+### Third-party web services
+
+Depending on the process you are interested to apply to the articles as they are harvested, the following tools need to be installed and running, with access information specified in the configuration file (`config.json`):
+
 - [Grobid](https://github.com/kermitt2/grobid), for converting PDF into XML TEI. 
-- [Pub2TEI](https://github.com/kermitt2/Pub2TEI), for converting PMC XML files into XML TEI
+- [Pub2TEI](https://github.com/kermitt2/Pub2TEI), for converting PMC XML files into XML TEI.
+- [biblio-glutton](https://github.com/kermitt2/biblio-glutton), for metadata retrieval and aggregation.
 
-As [biblio-glutton](https://github.com/kermitt2/biblio-glutton) is using dataset dumps, there is a gap of several months in term of bibliographical data freshness. So, complementary, the [CrossRef web API](https://github.com/CrossRef/rest-api-doc) and [Unpaywall API](https://unpaywall.org/products/api) services are used to cover the gap. For these two services, you need to indicate your email in the config file (`config.json`) to follow the etiquette policy of these two services. If the configuration parameters for `biblio-glutton` are empty (default), only the CrossRef REST API will be used. 
+As [biblio-glutton](https://github.com/kermitt2/biblio-glutton) is using dataset dumps, there is a gap of several months in terms of bibliographical data freshness. So, complementary, the [CrossRef web API](https://github.com/CrossRef/rest-api-doc) and [Unpaywall API](https://unpaywall.org/products/api) services are used to cover the gap. For these two services, you need to indicate your email in the config file (`config.json`) to follow the etiquette policy of these two services. If the configuration parameters for `biblio-glutton` are empty (default), only the CrossRef REST API will be used.
 
-An important parameter in the `config.json` file is the number of parallel document processing that is allowed, this is specified by the attribute `batch_size`, default value being `10` (so 10 documents max downloaded in parallel with distinct threads/workers and processed by Grobid in parallel). You can set this number according to your available number of threads. If you do not apply Grobid on the downloaded PDF, you can raise the `batch_size` parameter significantly, for example to `50`, which means then 100 paralell download. Be careful that parallel download from the same source might be blocked or might result in black-listing for some OA publisher sites, so it might be better to keep `batch_size` reasonable even when only donwloading.  
+For downloading preferably the fulltexts available at PubMed Central from the NIH site (PDF and JATS XML files) rather than on publisher sites, the Open Access list file from PMC that maps PMC identifiers to PMC resource archive URL will be downloaded automatically. You can also download it manually as follows:
 
-For downloading preferably the fulltexts available at PubMed Central from the NIH site (PDF and JATS XML files) rather than on publisher sites, the Open Access list file from PMC that maps PMC identifiers to PMC resource archive URL will be downloaded automatically. You can also download it manually as follow:
-
-```console
+```sh
 cd resources
 wget https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt
 ```
 
 When this file is available under `resources/oa_file_list.txt`, an index will be built at first launch and the harvester will prioritize the access to the NIH resources. 
 
-## Docker
+## Configuration
 
-TBD
+Before using the pipeline, first check [the configuration file](./config.json) and provide:
+
+- the output path
+- the API endpoints you want to use (e.g. change `grobid_base` if not using Docker)
+- your e-mail address as a courtesy to the API services we're going to use
+- if applicable: your AWS S3 bucket credentials
+
+```json
+{
+    "data_path": "./data",
+    "legacy_data_path": "",
+    "aws_access_key_id": "",
+    "aws_secret_access_key": "",
+    "bucket_name": "",
+    "region": "",
+    "batch_size": 10,
+    "pmc_base_ftp": "ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/",
+    "pmc_base_web": "https://www.ncbi.nlm.nih.gov/pmc/articles/",
+    "arxiv_base": "https://arxiv.org/pdf",
+    "unpaywall_base": "http://api.unpaywall.org/v2/",
+    "unpaywall_email": "",
+    "biblio_glutton_base": "",
+    "crossref_base": "https://api.crossref.org",
+    "crossref_email": "",
+    "grobid_base": "host.docker.internal",
+    "grobid_port": "8070",
+    "cord19_elsevier_map_path": "resources/elsevier_covid_map_26-07-2021.csv.gz",
+    "cord19_elsevier_pdf_path": "",
+    "pub2tei_path": ""
+}
+```
+
+An important parameter in the `config.json` file is the number of parallel document processing that is allowed, this is specified by the attribute `batch_size`, default value being `10` (so 10 documents max downloaded in parallel with distinct threads/workers and processed by Grobid in parallel). You can set this number according to your available number of threads. If you do not apply Grobid on the downloaded PDF, you can raise the `batch_size` parameter significantly, for example to `50`. But be careful since parallel downloads from the same source might be blocked or result in black-listing for some OA publisher sites, so it might be better to keep `batch_size` reasonable even when only downloading.
 
 ## Usage
 
@@ -127,13 +172,13 @@ Scholar PDF harvester and converter
 
 optional arguments:
   -h, --help       show this help message and exit
-  --dois DOIS      path to a file describing a dataset articles as a simple list of DOI (one per
-                   line)
+  --dois DOIS      path to a file describing a dataset articles as a simple list of DOI
+                   (one per line)
   --cord19 CORD19  path to the csv file describing the CORD-19 dataset articles
-  --pmids PMIDS    path to a file describing a dataset articles as a simple list of PMID (one
-                   per line)
-  --pmcids PMCIDS  path to a file describing a dataset articles as a simple list of PMC ID (one
-                   per line)
+  --pmids PMIDS    path to a file describing a dataset articles as a simple list of PMID
+                   (one per line)
+  --pmcids PMCIDS  path to a file describing a dataset articles as a simple list of PMC ID
+                   (one per line)
   --config CONFIG  path to the config file, default is ./config.json
   --reset          ignore previous processing states, and re-init the harvesting process from
                    the beginning
@@ -146,8 +191,6 @@ optional arguments:
                    consolidated_metadata.json
   --grobid         process downloaded files with Grobid to generate full text XML
 ```
-
-Fill the file `config.json` with relevant service and parameter url.
 
 For example to harvest a list of DOI (one DOI per line):
 
@@ -224,9 +267,7 @@ python3 harvest.py --diagnostic --config my_config.json
 
 ## Generated files
 
-### Default 
-
-Structure of the generated files for an article having as UUID identifier `98da17ff-bf7e-4d43-bdf2-4d8d831481e5`
+Structure of the generated files for an article with the UUID `98da17ff-bf7e-4d43-bdf2-4d8d831481e5`:
 
 ```
 98/da/17/ff/98da17ff-bf7e-4d43-bdf2-4d8d831481e5/98da17ff-bf7e-4d43-bdf2-4d8d831481e5.pdf
@@ -251,7 +292,7 @@ File with extension `*.nxml` are JATS XML files downloaded from PubMed Central (
 
 The UUID identifier for a particular article is given in the generated `map.json` file under the data path, associated to the every document identifiers. The UUID is also given in the `consolidated_metadata.csv` file (obtained with option `--dump`, see above).
 
-## CORD-19 example
+## Example: CORD-19
 
 The tool can realize its own harvesting and ingestion of CORD-19 papers based on an official version of the `metadata.csv` file of CORD-19. It provides two main advantages as compared to the official CORD-19 dataset:
 
@@ -293,9 +334,9 @@ where `<date_iso_str>` should match a release date indicated on the [CORD-19 rel
 
 For running the coverage script, which compares the full text coverage of the official CORD-19 dataset with the one produced by the present tool, you will need the full CORD-19 dataset. 
 
-## On harvesting and ingesting the CORD-19 dataset
+### On harvesting and ingesting the CORD-19 dataset
 
-### Adding a local PDF repository for Elsevier OA COVID papers
+#### Adding a local PDF repository for Elsevier OA COVID papers
 
 The [CORD-19 dataset](https://pages.semanticscholar.org/coronavirus-research) includes more than 19k articles corresponding to a set of Elsevier articles on COVID-19 [recently put in Open Access](https://www.elsevier.com/connect/coronavirus-information-center). As Unpaywall does not cover these OA articles (on 2020-03-23 at least), you will need to download first these PDF and indicates to the harvesting tool where the local repository of PDF is located: 
 
@@ -320,7 +361,7 @@ mget *
 
 That's it. The file `./elsevier_covid_map_28_06_2020.csv.gz` contains a map of DOI and PII (the Elsevier article identifiers) for these OA articles. 
 
-### Incremental harvesting
+#### Incremental harvesting
 
 CORD-19 is updated regularly. Suppose that you have harvested one release of the CORD-19 full texts and a few weeks later you would like to refresh your local corpus. Incremental harvesting is supported, so only the new entries will be uploaded and ingested. 
 
@@ -340,7 +381,7 @@ The constraint is that the same data repository path is kept in the config file.
 
 As an alternative, it is also possible to point to a local old data directory in the config file, with parameter `legacy_data_path`. Before trying to download a file from the internet, the harvester will first check in this older data directory if the PDF files are not already locally available based on the same identifiers. 
 
-### Results with CORD-19
+#### Results with CORD-19
 
 Here are the results regarding the CORD-19 from __2020-09-11__ ([cord-19_2020-09-11.tar.gz](https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/historical_releases/cord-19_2020-09-11.tar.gz)) (4.6GB) to illustrate the interest of this harvester tool. We used the present tool using the CORD-19 metadata file (`metadata.csv`), re-harvested the full texts and converted all into the same target TEI XML format (without information loss with respect to the available publisher XML and GROBID PDF-to-XML conversion). 
 
@@ -373,7 +414,7 @@ Other main differences include:
 
 Some [notes on CORD-19 harvesting](notes-cord19.md), including numbers for update version `2021-07-26`.
 
-## Converting the PMC XML JATS files into XML TEI
+### Converting the PMC XML JATS files into XML TEI
 
 After the harvesting and processing realised by `article_dataset_builder/harvest.py`, it is possible to convert of PMC XML JATS files into XML TEI. This will provide better XML quality than what can be extracted automatically by Grobid from the PDF. This conversion allows to have all the documents in the same XML TEI customization format. As the TEI format superseeds JATS, there is no loss of information from the JATS file. It requires [Pub2TEI](https://github.com/kermitt2/Pub2TEI) to be installed and the path to Pub2TEI `pub2tei_path` to be set in the `config.json` file of the `article_dataset_builder` project.
 
@@ -397,12 +438,11 @@ This will apply Pub2TEI (a set of XSLT) to all the harvested `*.nxml` files and 
 
 Note that Pub2TEI supports a lot of other publisher's XML formats (and variants of these formats), so the principle and current tool could be used to transform different publisher XML formats into a single one (TEI) - not just NLM/JATS, facilitating and centralizing further ingestion and process by avoiding to write complicated XML parsers for each case. 
 
-## Checking CORD-19 dataset coverage
+### Checking CORD-19 dataset coverage
 
 The following script checks the number of duplicated `cord id` (also done by the normal harvester), but also count the number of articles with at least one JSON full text file:
 
-
-```
+```sh
 usage: article_dataset_builder/check_cord19_coverage.py [-h] [--documents DOCUMENTS]
                                 [--metadata METADATA]
 
@@ -423,12 +463,11 @@ python3 article_dataset_builder/check_cord19_coverage.py --metadata cord-19/2021
 
 The path for `--documents` is the path where the folder `document_parses` is located. 
 
+## Troubleshooting: Imagemagick
 
-## Troubleshooting with imagemagick
+In some versions of imagemagick, the PDF converter is disabled by default for security reasons related to server usage. If run locally, you can safely re-configure imagemagick to allow PDF conversion. To do this, simply edit the file `/etc/ImageMagick-6/policy.xml` (or `/etc/ImageMagick/policy.xml`) and comment the following line:
 
-Recent update (end of October 2018) of imagemagick is breaking the normal conversion usage. Basically the converter does not convert by default for security reason related to server usage. For non-server mode as involved in our module, it is not a problem to allow PDF conversion. For this, simply edit the file `/etc/ImageMagick-6/policy.xml` (or `/etc/ImageMagick/policy.xml`) and put into comment the following line: 
-
-```
+```sh
 <!-- <policy domain="coder" rights="none" pattern="PDF" /> -->
 ```
 
@@ -447,7 +486,7 @@ For citing this software work, please refer to the present GitHub project, toget
 }
 ```
 
-## License and contact
+## License & Contact
 
 Distributed under [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
 
